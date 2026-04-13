@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply min-h-screen bg-background bg-hero-radial text-text antialiased;
+}
+
+a {
+  @apply transition-colors duration-200;
+}
+
+::selection {
+  @apply bg-accent text-slate-950;
+}
