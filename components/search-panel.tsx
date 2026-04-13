@@ -1,3 +1,8 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
 const regions = [
   "EUW",
   "EUNE",
@@ -10,6 +15,37 @@ const regions = [
 ];
 
 export function SearchPanel() {
+  const router = useRouter();
+  const [riotId, setRiotId] = useState("");
+  const [region, setRegion] = useState("EUW");
+  const [error, setError] = useState("");
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedRiotId = riotId.trim();
+
+    // Riot IDs must include a hashtag so we can separate the game name from the tag.
+    if (!normalizedRiotId.includes("#")) {
+      setError("Enter a Riot ID in the format SummonerName#TAG.");
+      return;
+    }
+
+    const [name, tag] = normalizedRiotId.split("#");
+
+    // Both parts are required, otherwise the input is still incomplete.
+    if (!name || !tag) {
+      setError("Both the player name and tag are required.");
+      return;
+    }
+
+    setError("");
+
+    // The current route only needs the player name and region.
+    // We still parse the tag now so the form logic is ready for future expansions.
+    router.push(`/player/${encodeURIComponent(name)}/${region.toLowerCase()}`);
+  }
+
   return (
     <section className="rounded-[2rem] border border-border bg-surface/90 p-5 shadow-glow sm:p-6 lg:p-8">
       <div className="space-y-6">
@@ -21,13 +57,12 @@ export function SearchPanel() {
             Start with a single player lookup
           </h2>
           <p className="text-sm leading-6 text-textMuted sm:text-base">
-            This form is intentionally static for now, so the project stays easy
-            to extend when API integration begins.
+            Enter a Riot ID and region to jump into the player profile route.
           </p>
         </div>
 
-        {/* The form is presentational for now and can later be wired to routing or API calls. */}
-        <form className="space-y-4">
+        {/* App Router navigation happens on submit so the UI stays simple and scalable. */}
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <label
               htmlFor="riot-id"
@@ -39,6 +74,8 @@ export function SearchPanel() {
               id="riot-id"
               type="text"
               placeholder="SummonerName#TAG"
+              value={riotId}
+              onChange={(event) => setRiotId(event.target.value)}
               className="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-white outline-none transition placeholder:text-textMuted focus:border-accent"
             />
           </div>
@@ -52,7 +89,8 @@ export function SearchPanel() {
             </label>
             <select
               id="region"
-              defaultValue="EUW"
+              value={region}
+              onChange={(event) => setRegion(event.target.value)}
               className="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-white outline-none transition focus:border-accent"
             >
               {regions.map((region) => (
@@ -63,8 +101,12 @@ export function SearchPanel() {
             </select>
           </div>
 
+          {error ? (
+            <p className="text-sm text-rose-300">{error}</p>
+          ) : null}
+
           <button
-            type="button"
+            type="submit"
             className="w-full rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-accentSoft"
           >
             View Stats
