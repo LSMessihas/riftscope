@@ -3,21 +3,23 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const regions = [
+const servers = [
   "EUW",
   "EUNE",
+  "TR",
+  "RU",
   "NA",
-  "KR",
-  "BR",
   "LAN",
   "LAS",
-  "OCE",
+  "BR",
+  "KR",
+  "JP",
 ];
 
 export function SearchPanel() {
   const router = useRouter();
   const [riotId, setRiotId] = useState("");
-  const [region, setRegion] = useState("EUW");
+  const [server, setServer] = useState("EUW");
   const [error, setError] = useState("");
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -25,25 +27,36 @@ export function SearchPanel() {
 
     const normalizedRiotId = riotId.trim();
 
-    // Riot IDs must include a hashtag so we can separate the game name from the tag.
+    // Riot ID is the public player identifier in the format `gameName#tagLine`.
+    // It is separate from the selected League platform server like EUW or NA.
     if (!normalizedRiotId.includes("#")) {
       setError("Enter a Riot ID in the format SummonerName#TAG.");
       return;
     }
 
-    const [name, tag] = normalizedRiotId.split("#");
+    const riotIdParts = normalizedRiotId.split("#");
 
-    // Both parts are required, otherwise the input is still incomplete.
-    if (!name || !tag) {
-      setError("Both the player name and tag are required.");
+    if (riotIdParts.length !== 2) {
+      setError("Use exactly one # in the Riot ID, like SummonerName#TAG.");
+      return;
+    }
+
+    const [gameName, tagLine] = riotIdParts.map((part) => part.trim());
+
+    if (!gameName || !tagLine) {
+      setError("Both the game name and tagLine are required.");
       return;
     }
 
     setError("");
 
-    // The current route only needs the player name and region.
-    // We still parse the tag now so the form logic is ready for future expansions.
-    router.push(`/player/${encodeURIComponent(name)}/${region.toLowerCase()}`);
+    // The route keeps the selected platform server in the path.
+    // The Riot tagLine is passed separately as a query param.
+    router.push(
+      `/player/${encodeURIComponent(gameName)}/${server.toLowerCase()}?tagLine=${encodeURIComponent(
+        tagLine,
+      )}`,
+    );
   }
 
   return (
@@ -57,11 +70,12 @@ export function SearchPanel() {
             Start with a single player lookup
           </h2>
           <p className="text-sm leading-6 text-textMuted sm:text-base">
-            Enter a Riot ID and region to jump into the player profile route.
+            Enter a full Riot ID, then choose the League server for the account
+            lookup.
           </p>
         </div>
 
-        {/* App Router navigation happens on submit so the UI stays simple and scalable. */}
+        {/* App Router navigation happens on submit after we split Riot ID into its two parts. */}
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <label
@@ -82,20 +96,20 @@ export function SearchPanel() {
 
           <div className="space-y-2">
             <label
-              htmlFor="region"
+              htmlFor="server"
               className="text-sm font-medium text-white"
             >
-              Region
+              Server
             </label>
             <select
-              id="region"
-              value={region}
-              onChange={(event) => setRegion(event.target.value)}
+              id="server"
+              value={server}
+              onChange={(event) => setServer(event.target.value)}
               className="w-full rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm text-white outline-none transition focus:border-accent"
             >
-              {regions.map((region) => (
-                <option key={region} value={region}>
-                  {region}
+              {servers.map((serverOption) => (
+                <option key={serverOption} value={serverOption}>
+                  {serverOption}
                 </option>
               ))}
             </select>
@@ -116,10 +130,18 @@ export function SearchPanel() {
         <div className="grid gap-3 rounded-3xl border border-border bg-background/70 p-4 sm:grid-cols-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accentSoft">
-              Search
+              Riot ID
             </p>
             <p className="mt-2 text-sm text-textMuted">
-              Riot ID and region inputs are ready for future form logic.
+              The search input is parsed into `gameName` and `tagLine`.
+            </p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accentSoft">
+              Platform
+            </p>
+            <p className="mt-2 text-sm text-textMuted">
+              The server selector stores the LoL platform shard like EUW or NA.
             </p>
           </div>
           <div>
@@ -127,15 +149,7 @@ export function SearchPanel() {
               Routing
             </p>
             <p className="mt-2 text-sm text-textMuted">
-              The page structure already supports dedicated stat views.
-            </p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accentSoft">
-              Scaling
-            </p>
-            <p className="mt-2 text-sm text-textMuted">
-              Shared components keep future growth manageable.
+              The API route later maps the platform server to Riot regional routing.
             </p>
           </div>
         </div>
